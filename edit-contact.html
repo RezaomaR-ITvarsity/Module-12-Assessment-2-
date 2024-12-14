@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Contact</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .btn {
+            margin: 10px 0;
+        }
+        #avatarImage img {
+            width: 200px;
+            border-radius: 50%;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body onload="getContact()">
+    <div class="container">
+        <h1 class="text-center my-4">Edit Contact</h1>
+        <div id="avatarImage" class="text-center"></div>
+        <form id="editForm">
+            <div class="form-group">
+                <label for="firstname">First Name</label>
+                <input type="text" class="form-control" name="firstname" id="firstname" readonly>
+            </div>
+            <div class="form-group">
+                <label for="lastname">Last Name</label>
+                <input type="text" class="form-control" name="lastname" id="lastname" readonly>
+            </div>
+            <div class="form-group">
+                <label for="mobile">Mobile</label>
+                <input type="text" class="form-control" name="mobile" id="mobile" readonly>
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="text" class="form-control" name="email" id="email" readonly>
+            </div>
+            <div class="form-group">
+                <label for="avatar" id="avatarLabel" hidden>Change Profile Image</label>
+                <input type="file" class="form-control-file" name="avatar" id="avatar" hidden>
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitForm" hidden>Submit</button>
+        </form>
+        <button id="homeLink" class="btn btn-secondary mt-3" type="button">Home</button>
+        <button id="editContact" class="btn btn-warning mt-3" type="button">Edit</button>
+        <button id="deleteContact" class="btn btn-danger mt-3" type="button">Delete</button>
+    </div>
+
+    <script src="config.js"></script>
+    <script>
+        var id = getId();
+        document.getElementById("homeLink").addEventListener('click', homeLink);
+        document.getElementById("editContact").addEventListener('click', editContact);
+        document.getElementById("submitForm").addEventListener('click', submitForm);
+        document.getElementById("deleteContact").addEventListener('click', deleteContact);
+
+        function getId() {
+            var url = window.location.href;
+            var pos = url.search("=");
+            var id = url.slice(pos + 1);
+            return id;
+        }
+
+        function getContact() {
+            fetch(rootPath + 'controller/get-contacts/?id=' + id)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    displayOutput(data);
+                });
+        }
+
+        function homeLink() {
+            window.open("index.html", "_self");
+        }
+
+        function displayOutput(data) {
+            var avatarImg = `
+                <img src="${rootPath}/controller/uploads/${data[0].avatar}" alt="Avatar"/>
+            `;
+            document.getElementById("avatarImage").innerHTML = avatarImg;
+            document.getElementById("firstname").value = data[0].firstname;
+            document.getElementById("lastname").value = data[0].lastname;
+            document.getElementById("mobile").value = data[0].mobile;
+            document.getElementById("email").value = data[0].email;
+        }
+
+        function editContact() {
+            document.getElementById("firstname").readOnly = false;
+            document.getElementById("lastname").readOnly = false;
+            document.getElementById("mobile").readOnly = false;
+            document.getElementById("email").readOnly = false;
+            document.getElementById("avatar").hidden = false;
+            document.getElementById("submitForm").hidden = false;
+        }
+
+        function submitForm(e) {
+            e.preventDefault();
+
+            const form = new FormData(document.querySelector("#editForm"));
+            form.append('apiKey', apiKey);
+            form.append('id', id);
+
+            fetch(rootPath + 'controller/edit-contact/', {
+                method: 'POST',
+                headers: {'Accept': 'application/json, *.*'},
+                body: form
+            })
+            .then(function(response) {
+                return response.text();
+            })
+            .then(function(data) {
+                if (data == "1") {
+                    alert("Contact edited.");
+                    homeLink();
+                } else {
+                    alert(data);
+                    homeLink();
+                }
+            })
+            .catch(function(error) {
+                console.error('Error editing contact:', error);
+            });
+        }
+
+        function deleteContact() {
+            var confirmDelete = confirm("Delete contact. Are you sure?");
+
+            if (confirmDelete == true) {
+                fetch(rootPath + 'controller/delete-contact/?id=' + id)
+                    .then(function(response) {
+                        return response.text();
+                    })
+                    .then(function(data) {
+                        if (data == "1") {
+                            homeLink();
+                        } else {
+                            alert(data);
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error deleting contact:', error);
+                    });
+            }
+        }
+    </script>
+</body>
+</html>
